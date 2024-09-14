@@ -21,3 +21,32 @@ WHERE
     AND t.table_schema NOT LIKE 'information_schema'  -- 排除信息架构
 ORDER BY 
     pg_total_relation_size(quote_ident(table_schema) || '.' || quote_ident(table_name)) DESC;
+
+
+
+
+
+
+
+
+SELECT
+    schemaname AS schema_name,
+    relname AS table_name,
+    pg_size_pretty(pg_total_relation_size(relid)) AS total_size,
+    n_live_tup AS row_count,
+    COUNT(attname) AS column_count
+FROM
+    pg_stat_user_tables
+JOIN
+    pg_class ON pg_class.oid = pg_stat_user_tables.relid
+JOIN
+    pg_namespace ON pg_namespace.oid = pg_class.relnamespace
+JOIN
+    pg_attribute ON pg_attribute.attrelid = pg_class.oid
+WHERE
+    attnum > 0  -- 忽略系统列
+    AND NOT attisdropped  -- 忽略被删除的列
+GROUP BY
+    schema_name, table_name, total_size, row_count
+ORDER BY
+    total_size DESC;
