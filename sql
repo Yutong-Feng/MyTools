@@ -27,3 +27,20 @@ GROUP BY
 ORDER BY 
     SUM(pg_total_relation_size(oid)) DESC, 
     SUM(pg_indexes_size(oid)) DESC;
+
+
+
+SELECT 
+    table_schema || '.' || table_name AS table_full_name,
+    pg_size_pretty(pg_total_relation_size(table_schema || '.' || table_name)) AS total_size,
+    pg_size_pretty(pg_relation_size(table_schema || '.' || table_name)) AS table_size,
+    pg_size_pretty(pg_total_relation_size(table_schema || '.' || table_name) - pg_relation_size(table_schema || '.' || table_name)) AS index_size,
+    (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = t.table_schema AND table_name = t.table_name) AS column_count,
+    (SELECT reltuples::BIGINT FROM pg_class WHERE relname = t.table_name) AS row_count
+FROM 
+    information_schema.tables t
+WHERE 
+    table_type = 'BASE TABLE' 
+    AND table_schema NOT IN ('pg_catalog', 'information_schema')
+ORDER BY 
+    pg_total_relation_size(table_schema || '.' || table_name) DESC;
